@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>USDT TRC20 | محفظتي</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#18212b}
+header{background:#111827;color:#fff;padding:18px 20px;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:22px;font-weight:800}.net{font-size:13px;background:#173f35;padding:8px 12px;border-radius:20px;color:#8ff0bd}
+.wrap{max-width:900px;margin:25px auto;padding:0 16px}.card{background:#fff;border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:0 4px 18px #0000000d}
+h1,h2{margin-top:0}.balance{font-size:34px;font-weight:800;margin:10px 0}.muted{color:#6b7280}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+button{border:0;border-radius:12px;padding:13px 16px;font-size:16px;cursor:pointer;background:#16a34a;color:white}
+button.secondary{background:#e8edf2;color:#111827}button.danger{background:#dc2626}
+input{width:100%;padding:13px;border:1px solid #d7dce2;border-radius:10px;margin:7px 0 12px;font-size:16px}
+.addr{background:#f1f5f9;padding:14px;border-radius:10px;word-break:break-all;font-family:monospace;direction:ltr}
+.status{padding:7px 10px;border-radius:20px;background:#fff7ed;color:#c2410c;font-size:13px}
+.hidden{display:none}.tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse}td,th{padding:12px;border-bottom:1px solid #eee;text-align:right}
+.note{background:#fff8db;padding:13px;border-radius:12px;color:#765900;line-height:1.7}
+</style>
+</head>
+<body>
+<header><div class="logo">USDT TRC20</div><div class="net">شبكة TRON • TRC20</div></header>
+<div class="wrap">
+
+<section id="auth" class="card">
+<h1>إنشاء حساب / تسجيل الدخول</h1>
+<p class="muted">نسخة تجريبية لواجهة منصة شحن USDT عبر TRC20.</p>
+<input id="email" type="email" placeholder="البريد الإلكتروني">
+<input id="password" type="password" placeholder="كلمة المرور">
+<div class="grid">
+<button onclick="login()">دخول</button>
+<button class="secondary" onclick="register()">إنشاء حساب</button>
+</div>
+<p id="authMsg" class="muted"></p>
+</section>
+
+<section id="app" class="hidden">
+<div class="card">
+<div class="muted">الرصيد المتاح</div>
+<div class="balance"><span id="balance">0.00</span> USDT</div>
+<div class="muted">الحساب: <span id="user"></span></div>
+</div>
+
+<div class="tabs">
+<button onclick="show('deposit')">شحن USDT</button>
+<button class="secondary" onclick="show('history')">سجل العمليات</button>
+<button class="danger" onclick="logout()">تسجيل الخروج</button>
+</div>
+
+<div id="deposit" class="card">
+<h2>شحن USDT — TRC20</h2>
+<div class="note">أرسل USDT على شبكة TRC20 فقط. لا ترسل عبر ERC20 أو BEP20 إلى هذا العنوان.</div>
+<h3>عنوان الإيداع</h3>
+<div class="addr" id="wallet">TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX</div>
+<br>
+<button onclick="copyWallet()">نسخ العنوان</button>
+<h3>إثبات العملية</h3>
+<input id="amount" type="number" step="0.01" placeholder="المبلغ USDT">
+<input id="txid" placeholder="Transaction Hash / TxID">
+<button onclick="submitDeposit()">إرسال طلب الشحن</button>
+<p id="depMsg" class="muted"></p>
+</div>
+
+<div id="history" class="card hidden">
+<h2>سجل العمليات</h2>
+<table><thead><tr><th>النوع</th><th>المبلغ</th><th>TxID</th><th>الحالة</th></tr></thead>
+<tbody id="rows"><tr><td colspan="4" class="muted">لا توجد عمليات بعد.</td></tr></tbody></table>
+</div>
+</section>
+</div>
+
+<script>
+const KEY='usdt_demo_data';
+let data=JSON.parse(localStorage.getItem(KEY)||'{}');
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function register(){
+ const e=email.value.trim(),p=password.value;
+ if(!e||p.length<6){authMsg.textContent='أدخل بريدًا وكلمة مرور من 6 أحرف على الأقل.';return}
+ if(data[e]){authMsg.textContent='الحساب موجود. استخدم تسجيل الدخول.';return}
+ data[e]={password:p,balance:0,history:[]};save();authMsg.textContent='تم إنشاء الحساب. اضغط دخول.';email.value=e;
+}
+function login(){
+ const e=email.value.trim(),p=password.value;
+ if(!data[e]||data[e].password!==p){authMsg.textContent='بيانات الدخول غير صحيحة.';return}
+ sessionStorage.setItem('user',e);openApp();
+}
+function openApp(){
+ const e=sessionStorage.getItem('user'); if(!e||!data[e])return;
+ auth.classList.add('hidden');app.classList.remove('hidden');user.textContent=e;
+ balance.textContent=Number(data[e].balance||0).toFixed(2);render();
+}
+function logout(){sessionStorage.removeItem('user');location.reload()}
+function show(id){deposit.classList.toggle('hidden',id!=='deposit');history.classList.toggle('hidden',id!=='history')}
+function copyWallet(){navigator.clipboard?.writeText(wallet.textContent);depMsg.textContent='تم نسخ العنوان.'}
+function submitDeposit(){
+ const e=sessionStorage.getItem('user'),a=Number(amount.value),t=txid.value.trim();
+ if(!a||a<=0||!t){depMsg.textContent='أدخل المبلغ وTxID.';return}
+ data[e].history.unshift({type:'إيداع',amount:a,txid:t,status:'قيد المراجعة'});save();render();
+ depMsg.textContent='تم إرسال طلب الشحن للمراجعة.';amount.value='';txid.value='';
+}
+function render(){
+ const e=sessionStorage.getItem('user'),h=data[e].history||[];
+ rows.innerHTML=h.length?h.map(x=>`<tr><td>${x.type}</td><td>${x.amount} USDT</td><td style="direction:ltr">${x.txid}</td><td><span class="status">${x.status}</span></td></tr>`).join(''):'<tr><td colspan="4" class="muted">لا توجد عمليات بعد.</td></tr>';
+}
+openApp();
+</script>
+</body>
+</html>
